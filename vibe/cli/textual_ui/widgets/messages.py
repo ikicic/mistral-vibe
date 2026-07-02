@@ -504,7 +504,8 @@ class BashOutputMessage(ClickWithoutDragMixin, SpinnerMixin, Static):
     def _update_spinner_frame(self) -> None:
         if not self._is_spinning or not self._prompt_widget or self._queued:
             return
-        self._prompt_widget.update(f"{self._spinner.next_frame()} ")
+        # Frames are all of the same size, skip the relayout.
+        self._prompt_widget.update(f"{self._spinner.next_frame()} ", layout=False)
 
     def on_mount(self) -> None:
         if self._pending and not self._queued:

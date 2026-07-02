@@ -214,13 +214,15 @@ class LoadingWidget(SpinnerMixin, Static):
     def _update_animation(self) -> None:
         total_elements = 1 + len(self.status) + 1
 
+        # Both the spinner frame and the status gradient keep the same width
+        # from tick to tick, so skip the whole-screen relayout.
         if self._indicator_widget:
             spinner_char = self._spinner.next_frame()
             color = self._get_color_for_position(0)
-            self._indicator_widget.update(f"[{color}]{spinner_char}[/]")
+            self._indicator_widget.update(f"[{color}]{spinner_char}[/]", layout=False)
 
         if self._status_widget:
-            self._status_widget.update(self._build_status_text())
+            self._status_widget.update(self._build_status_text(), layout=False)
 
         self.transition_progress += 1
         if self.transition_progress > total_elements:
