@@ -89,6 +89,7 @@ class LoadingWidget(SpinnerMixin, Static):
         self.debounce_widget: Static | None = None
         self.start_time: float | None = None
         self._last_elapsed: int = -1
+        self._last_hint_width: int = -1
         self._paused_total: float = 0.0
         self._pause_start: float | None = None
         self._queued_count: int = 0
@@ -143,10 +144,19 @@ class LoadingWidget(SpinnerMixin, Static):
         if count == self._queued_count:
             return
         self._queued_count = count
-        if self.hint_widget is not None:
-            self.hint_widget.update(
-                shortcut_hint(self._format_hint(max(self._last_elapsed, 0)))
-            )
+        self._update_hint(max(self._last_elapsed, 0))
+
+    def _update_hint(self, elapsed: int) -> None:
+        if self.hint_widget is None:
+            return
+        hint = shortcut_hint(self._format_hint(elapsed))
+        # Only relayout when the rendered width changes (e.g. 9s -> 10s);
+        # a plain repaint is much cheaper than a whole-screen relayout.
+        # This assumes the hint is a single line that never wraps: for
+        # wrapped text, equal width would not imply equal rendered size.
+        layout = hint.cell_length != self._last_hint_width
+        self._last_hint_width = hint.cell_length
+        self.hint_widget.update(hint, layout=layout)
 
     def _format_hint(self, elapsed: int) -> str:
         elapsed_str = _format_elapsed(elapsed)
@@ -168,10 +178,11 @@ class LoadingWidget(SpinnerMixin, Static):
             yield self._status_widget
 
             if self._show_hint:
-                self.hint_widget = NoMarkupStatic(
-                    shortcut_hint(f"(0s {shortcut('Esc/Ctrl+C')} to interrupt)"),
-                    classes="loading-hint",
+                initial_hint = shortcut_hint(
+                    f"(0s {shortcut('Esc/Ctrl+C')} to interrupt)"
                 )
+                self._last_hint_width = initial_hint.cell_length
+                self.hint_widget = NoMarkupStatic(initial_hint, classes="loading-hint")
                 yield self.hint_widget
 
             self.debounce_widget = Static("", classes="loading-debounce")
@@ -239,7 +250,7 @@ class LoadingWidget(SpinnerMixin, Static):
             elapsed = int(time() - self.start_time - paused)
             if elapsed != self._last_elapsed:
                 self._last_elapsed = elapsed
-                self.hint_widget.update(shortcut_hint(self._format_hint(elapsed)))
+                self._update_hint(elapsed)
 
 
 @contextmanager
