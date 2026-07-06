@@ -62,11 +62,6 @@ class StatusMessage(SpinnerMixin, NoMarkupStatic):
     def on_resize(self) -> None:
         self.refresh_spinner()
 
-    def _update_spinner_frame(self) -> None:
-        if not self._is_spinning:
-            return
-        self.update_display()
-
     def update_display(self) -> None:
         if not self._indicator_widget or not self._text_widget:
             return
